@@ -68,10 +68,6 @@
             box-sizing: border-box;
             font-size: 16px;
         }
-        .encoding-select {
-            width: auto;
-            min-width: 150px;
-        }
         
         .search-btn {
             background-color: var(--button-bg);
@@ -123,22 +119,14 @@
 
     <div class="container">
         <div class="form-group">
-            <label>1. 上傳題庫檔案與編碼設定：</label>
-            <div class="flex-row">
-                <input type="file" id="fileInput" accept=".txt" multiple>
-                <select id="encodingSelect" class="encoding-select" title="若出現亂碼請切換此選項">
-                    <option value="UTF-8">UTF-8 (預設)</option>
-                    <option value="Big5">Big5 (ANSI)</option>
-                </select>
-            </div>
-            <div class="hint">💡 提示：如果上傳後查詢出來的文字是亂碼（出現菱形問號），請直接切換右側的編碼，無需重新上傳檔案。</div>
-            <div id="uploadStatus" class="status"></div>
+            <label>1. 題庫載入狀態：</label>
+            <div id="uploadStatus" class="status">🔄 正在從伺服器自動載入歷屆題庫...</div>
         </div>
 
         <div class="form-group">
             <label for="yearSelect">2. 選擇年份：</label>
             <select id="yearSelect">
-                <option value="">請先上傳檔案...</option>
+                <option value="">載入中...</option>
             </select>
         </div>
 
@@ -158,53 +146,44 @@
 
     <script>
         let examData = {};
-        let currentFiles = []; 
 
-        document.getElementById('fileInput').addEventListener('change', function(e) {
-            currentFiles = Array.from(e.target.files);
-            processFiles();
-        });
+        // 定義要自動載入的題庫檔案清單
+        const examFiles = [
+            '110記帳相關法規概要_題目及解答.txt',
+            '111記帳相關法規概要_題目及解答.txt',
+            '112記帳相關法規概要_題目及解答.txt',
+            '113記帳相關法規概要_題目及解答.txt',
+            '114記帳相關法規概要_題目及解答.txt'
+        ];
 
-        document.getElementById('encodingSelect').addEventListener('change', function() {
-            if (currentFiles.length > 0) {
-                processFiles();
-                if (document.getElementById('resultBox').style.display === 'block') {
-                    document.getElementById('searchBtn').click();
+        // 網頁載入完成時執行自動抓取
+        window.addEventListener('DOMContentLoaded', async function() {
+            let successCount = 0;
+            const statusDiv = document.getElementById('uploadStatus');
+
+            for (const filename of examFiles) {
+                try {
+                    const response = await fetch(filename);
+                    if (!response.ok) throw new Error(`HTTP 錯誤狀態: ${response.status}`);
+                    
+                    const text = await response.text();
+                    const isSuccess = parseExamText(filename, text);
+                    if (isSuccess) successCount++;
+                } catch (error) {
+                    console.error("無法載入檔案：" + filename, error);
                 }
             }
+
+            if (successCount > 0) {
+                updateYearSelect();
+                statusDiv.innerText = `✅ 成功自動載入 ${successCount} 個年度的題庫！`;
+                statusDiv.className = "status success";
+            } else {
+                updateYearSelect();
+                statusDiv.innerText = `❌ 題庫載入失敗，請確認檔案已上傳至 GitHub。`;
+                statusDiv.className = "status error";
+            }
         });
-
-        function processFiles() {
-            if (currentFiles.length === 0) return;
-
-            examData = {}; 
-            let filesProcessed = 0;
-            let successCount = 0;
-            const encoding = document.getElementById('encodingSelect').value;
-
-            currentFiles.forEach(file => {
-                const reader = new FileReader();
-                reader.onload = function(event) {
-                    const text = event.target.result;
-                    const isSuccess = parseExamText(file.name, text);
-                    if (isSuccess) successCount++;
-                    
-                    filesProcessed++;
-                    if (filesProcessed === currentFiles.length) {
-                        updateYearSelect();
-                        const statusDiv = document.getElementById('uploadStatus');
-                        if (successCount > 0) {
-                            statusDiv.innerText = `✅ 成功解析 ${successCount} 個檔案！(目前編碼: ${encoding})`;
-                            statusDiv.className = "status success";
-                        } else {
-                            statusDiv.innerText = `❌ 解析失敗。如果是亂碼，請嘗試切換上方的編碼選項。`;
-                            statusDiv.className = "status error";
-                        }
-                    }
-                };
-                reader.readAsText(file, encoding);
-            });
-        }
 
         function parseExamText(filename, text) {
             text = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
@@ -270,7 +249,7 @@
             const years = Object.keys(examData).sort((a, b) => b - a); 
             
             if (years.length === 0) {
-                select.innerHTML = '<option value="">請先上傳正確格式的檔案...</option>';
+                select.innerHTML = '<option value="">無可用題庫...</option>';
                 return;
             }
 
