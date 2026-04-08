@@ -5,21 +5,85 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>歷屆測驗題庫查詢系統</title>
     <style>
+        /* 1. 定義顏色變數 (預設為淺色模式) */
+        :root {
+            --bg-color: #f4f7f6;
+            --text-color: #333333;
+            --container-bg: #ffffff;
+            --border-color: #cccccc;
+            --input-bg: #ffffff;
+            --input-text: #333333;
+            --button-bg: #3498db;
+            --button-hover: #2980b9;
+            --result-bg: #e8f4f8;
+            --result-border: #3498db;
+            --answer-color: #e74c3c;
+            --hint-color: #7f8c8d;
+        }
+
+        /* 2. 定義深色模式的顏色變數 */
+        [data-theme="dark"] {
+            --bg-color: #121212;
+            --text-color: #e0e0e0;
+            --container-bg: #1e1e1e;
+            --border-color: #444444;
+            --input-bg: #2d2d2d;
+            --input-text: #e0e0e0;
+            --button-bg: #2980b9;
+            --button-hover: #3498db;
+            --result-bg: #1a2630;
+            --result-border: #2980b9;
+            --answer-color: #ff6b6b;
+            --hint-color: #aaaaaa;
+        }
+
+        /* 讓顏色切換時有平滑的漸變效果 */
+        body, .container, input, select, .result-box {
+            transition: background-color 0.3s, color 0.3s, border-color 0.3s;
+        }
+
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #f4f7f6;
-            color: #333;
+            background-color: var(--bg-color);
+            color: var(--text-color);
             max-width: 800px;
             margin: 0 auto;
             padding: 20px;
             line-height: 1.6;
         }
-        h1 {
-            text-align: center;
-            color: #2c3e50;
+
+        /* 標題與佈局區塊 */
+        .header-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
         }
+        h1 {
+            color: var(--text-color);
+            margin: 0;
+            flex-grow: 1;
+            text-align: center;
+        }
+        
+        /* 深淺切換按鈕樣式 */
+        .theme-toggle {
+            background-color: transparent;
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+            padding: 8px 15px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 14px;
+            width: auto;
+            transition: all 0.3s;
+        }
+        .theme-toggle:hover {
+            background-color: var(--border-color);
+        }
+
         .container {
-            background-color: #fff;
+            background-color: var(--container-bg);
             padding: 20px 30px;
             border-radius: 8px;
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
@@ -38,10 +102,14 @@
             gap: 10px;
             align-items: center;
         }
+        
+        /* 表單元件套用變數 */
         input[type="file"], select, input[type="number"] {
             width: 100%;
             padding: 10px;
-            border: 1px solid #ccc;
+            border: 1px solid var(--border-color);
+            background-color: var(--input-bg);
+            color: var(--input-text);
             border-radius: 4px;
             box-sizing: border-box;
             font-size: 16px;
@@ -49,10 +117,11 @@
         .encoding-select {
             width: auto;
             min-width: 150px;
-            background-color: #fdfdfd;
         }
-        button {
-            background-color: #3498db;
+        
+        /* 查詢按鈕套用變數 */
+        .search-btn {
+            background-color: var(--button-bg);
             color: white;
             padding: 12px 20px;
             border: none;
@@ -63,13 +132,15 @@
             transition: background-color 0.3s;
             font-weight: bold;
         }
-        button:hover {
-            background-color: #2980b9;
+        .search-btn:hover {
+            background-color: var(--button-hover);
         }
+        
+        /* 顯示結果區塊套用變數 */
         .result-box {
-            background-color: #e8f4f8;
+            background-color: var(--result-bg);
             padding: 20px;
-            border-left: 5px solid #3498db;
+            border-left: 5px solid var(--result-border);
             border-radius: 4px;
             margin-top: 20px;
             display: none;
@@ -82,7 +153,7 @@
         .answer-text {
             font-size: 18px;
             font-weight: bold;
-            color: #e74c3c;
+            color: var(--answer-color);
         }
         .status {
             margin-top: 10px;
@@ -90,13 +161,17 @@
             font-size: 15px;
         }
         .success { color: #27ae60; }
-        .error { color: #e74c3c; }
-        .hint { font-size: 13px; color: #7f8c8d; margin-top: 5px;}
+        .error { color: var(--answer-color); }
+        .hint { font-size: 13px; color: var(--hint-color); margin-top: 5px;}
     </style>
 </head>
 <body>
 
-    <h1>歷屆測驗題庫查詢系統</h1>
+    <div class="header-container">
+        <div style="width: 100px;"></div> 
+        <h1>歷屆測驗題庫查詢系統</h1>
+        <button id="themeToggle" class="theme-toggle">🌙 深色模式</button>
+    </div>
 
     <div class="container">
         <div class="form-group">
@@ -124,7 +199,7 @@
             <input type="number" id="questionNum" min="1" placeholder="例如輸入 1 後按下 Enter">
         </div>
 
-        <button id="searchBtn">查詢題目與答案</button>
+        <button id="searchBtn" class="search-btn">查詢題目與答案</button>
     </div>
 
     <div id="resultBox" class="result-box">
@@ -134,16 +209,41 @@
     </div>
 
     <script>
+        // ================= 深淺模式切換邏輯 =================
+        const themeToggleBtn = document.getElementById('themeToggle');
+        
+        // 檢查瀏覽器內是否有儲存過使用者的喜好設定
+        const currentTheme = localStorage.getItem('theme');
+        if (currentTheme === 'dark') {
+            document.documentElement.setAttribute('data-theme', 'dark');
+            themeToggleBtn.innerText = '☀️ 淺色模式';
+        }
+
+        // 點擊按鈕時切換模式
+        themeToggleBtn.addEventListener('click', () => {
+            let theme = document.documentElement.getAttribute('data-theme');
+            
+            if (theme === 'dark') {
+                document.documentElement.removeAttribute('data-theme');
+                localStorage.setItem('theme', 'light');
+                themeToggleBtn.innerText = '🌙 深色模式';
+            } else {
+                document.documentElement.setAttribute('data-theme', 'dark');
+                localStorage.setItem('theme', 'dark');
+                themeToggleBtn.innerText = '☀️ 淺色模式';
+            }
+        });
+
+
+        // ================= 題庫解析與查詢邏輯 =================
         let examData = {};
         let currentFiles = []; 
 
-        // 監聽檔案上傳
         document.getElementById('fileInput').addEventListener('change', function(e) {
             currentFiles = Array.from(e.target.files);
             processFiles();
         });
 
-        // 監聽編碼切換
         document.getElementById('encodingSelect').addEventListener('change', function() {
             if (currentFiles.length > 0) {
                 processFiles();
@@ -153,7 +253,6 @@
             }
         });
 
-        // 解析檔案的主函數
         function processFiles() {
             if (currentFiles.length === 0) return;
 
@@ -186,7 +285,6 @@
             });
         }
 
-        // 解析題庫文字內容
         function parseExamText(filename, text) {
             text = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
 
@@ -244,7 +342,6 @@
             return false;
         }
 
-        // 更新下拉選單年份
         function updateYearSelect() {
             const select = document.getElementById('yearSelect');
             select.innerHTML = '';
@@ -264,7 +361,6 @@
             });
         }
 
-        // 執行查詢功能
         function performSearch() {
             const year = document.getElementById('yearSelect').value;
             const qNum = document.getElementById('questionNum').value;
@@ -294,14 +390,12 @@
             }
         }
 
-        // 監聽查詢按鈕點擊
         document.getElementById('searchBtn').addEventListener('click', performSearch);
 
-        // ★ 新增功能：監聽輸入框的 Enter 鍵
         document.getElementById('questionNum').addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
-                e.preventDefault(); // 避免觸發其他預設行為
-                performSearch();    // 執行查詢
+                e.preventDefault(); 
+                performSearch();    
             }
         });
     </script>
