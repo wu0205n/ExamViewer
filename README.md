@@ -1,2 +1,0 @@
-# ExamViewer_Bookkeeping
-110-114_記帳相關法規概要_歷屆題目查詢
